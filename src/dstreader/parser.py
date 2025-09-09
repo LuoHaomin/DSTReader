@@ -215,6 +215,7 @@ class OptimizedDSTParser:
         x += ((byte0 & 0b00000100) >> 2) * 9 + ((byte0 & 0b00001000) >> 3) * (-9)
         x += ((byte1 & 0b00000001) * 3) + ((byte1 & 0b00000010) >> 1) * (-3)
         x += ((byte1 & 0b00000100) >> 2) * 27 + ((byte1 & 0b00001000) >> 3) * (-27)
+        # Byte 2: Bit 2 = x+81, Bit 3 = x-81
         x += ((byte2 & 0b00000100) >> 2) * 81 + ((byte2 & 0b00001000) >> 3) * (-81)
         return x
     
@@ -225,7 +226,8 @@ class OptimizedDSTParser:
         y += ((byte0 & 0b00100000) >> 5) * 9 + ((byte0 & 0b00010000) >> 4) * (-9)
         y += ((byte1 & 0b10000000) >> 7) * 3 + ((byte1 & 0b01000000) >> 6) * (-3)
         y += ((byte1 & 0b00100000) >> 5) * 27 + ((byte1 & 0b00010000) >> 4) * (-27)
-        y += ((byte2 & 0b00001000) >> 3) * 81 + ((byte2 & 0b00000100) >> 2) * (-81)
+        # Byte 2: Bit 5 = y+81, Bit 4 = y-81
+        y += ((byte2 & 0b00100000) >> 5) * 81 + ((byte2 & 0b00010000) >> 4) * (-81)
         return y
     
     def get_header_info_fast(self, file_path: str) -> dict:
