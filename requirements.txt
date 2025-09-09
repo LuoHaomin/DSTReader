@@ -1,0 +1,21 @@
+# DST Reader - PyQt GUI Application Requirements
+
+# Core GUI framework
+PyQt5>=5.15.0
+
+# Data processing and visualization
+numpy>=1.21.0
+matplotlib>=3.5.0
+
+# Optional: For enhanced performance
+# pillow>=8.0.0  # Already included with matplotlib
+
+# Development dependencies (optional)
+# pytest>=6.0.0
+# black>=21.0.0
+# flake8>=3.9.0
+
+# Platform-specific dependencies
+# Windows: PyQt5 should work out of the box
+# Linux: May need to install python3-pyqt5 or python3-pyqt5-dev
+# macOS: May need to install PyQt5 via brew or conda
