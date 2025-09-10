@@ -28,6 +28,57 @@ from PyQt5.QtGui import (
 from ..parser import DSTParser
 from ..models import DSTFile, Stitch
 
+def speed_to_interval(speed: int):
+    """
+    将速度值（1-100）映射为定时器间隔（毫秒），速度越大，间隔越小（越快）。
+    采用对数映射，在对数意义上更加均匀分布。
+    1对应1000ms，100对应0.01ms（理论值，实际最小1ms）。
+    """
+    import math
+    min_speed = 1
+    max_speed = 100
+    min_interval = 0.01  # 理论最小值：0.01ms
+    max_interval = 1000  # 最大值：1000ms
+
+    # 防止越界
+    speed = max(min_speed, min(max_speed, speed))
+
+    # 对数插值
+    log_min = math.log10(min_interval)
+    log_max = math.log10(max_interval)
+    log_interval = log_max + (log_min - log_max) * (speed - min_speed) / (max_speed - min_speed)
+    interval = 10 ** log_interval
+    
+    # 实际限制：QTimer最小间隔1ms
+    return max(1, int(interval))
+
+def calculate_frame_skip(speed: int):
+    """
+    根据速度计算帧跳过数，配合改进的速度函数
+    当间隔被限制在1ms时，通过帧跳过实现真正的超高速
+    最高速度时跳过100帧（0.01ms等效间隔）
+    """
+    import math
+    min_speed = 1
+    max_speed = 100
+    min_interval = 0.01  # 理论最小值：0.01ms
+    max_interval = 1000  # 最大值：1000ms
+    
+    # 防止越界
+    speed = max(min_speed, min(max_speed, speed))
+    
+    # 计算理论间隔
+    log_min = math.log10(min_interval)
+    log_max = math.log10(max_interval)
+    log_interval = log_max + (log_min - log_max) * (speed - min_speed) / (max_speed - min_speed)
+    theoretical_interval = 10 ** log_interval
+    
+    if theoretical_interval < 1:
+        # 需要帧跳过来实现理论速度
+        frame_skip = int(1 / theoretical_interval)
+        return max(1, frame_skip)
+    else:
+        return 1
 
 class DSTCanvas(QWidget):
     """Custom widget for drawing DST embroidery patterns."""
@@ -91,13 +142,14 @@ class DSTCanvas(QWidget):
         
         self.update()
         
-    def start_animation(self, frame_duration: int = 100):
+    def start_animation(self, frame_duration: int = 100, speed: int = 40):
         """Start animation playback."""
         if not self.dst_file:
             return
             
         self.animation_mode = True
         self.current_frame = 0
+        self.animation_speed = speed  # 保存速度信息用于帧跳过
         self.animation_timer.start(frame_duration)
         
     def stop_animation(self):
@@ -111,7 +163,11 @@ class DSTCanvas(QWidget):
         if not self.dst_file:
             return
             
-        self.current_frame += 1
+        # 使用改进的帧跳过逻辑，在对数意义上更均匀
+        speed = getattr(self, 'animation_speed', 40)  # 默认速度：10ms间隔
+        frame_skip = calculate_frame_skip(speed)
+            
+        self.current_frame += frame_skip
         if self.current_frame >= len(self.dst_file.stitches):
             self.current_frame = 0  # Loop animation
             
@@ -351,10 +407,10 @@ class DSTMainWindow(QMainWindow):
         anim_layout.addWidget(self.play_button)
         
         self.speed_slider = QSlider(Qt.Horizontal)
-        self.speed_slider.setRange(10, 1000)
-        self.speed_slider.setValue(100)
+        self.speed_slider.setRange(1, 100)  # 1-100，数值越大越快
+        self.speed_slider.setValue(40)  # 默认速度：10ms间隔
         self.speed_slider.setTickPosition(QSlider.TicksBelow)
-        self.speed_slider.setTickInterval(100)
+        self.speed_slider.setTickInterval(20)
         anim_layout.addWidget(QLabel("Speed:"))
         anim_layout.addWidget(self.speed_slider)
         
@@ -597,15 +653,20 @@ class DSTMainWindow(QMainWindow):
             self.play_button.setText("Play")
         else:
             speed = self.speed_slider.value()
-            self.canvas.start_animation(speed)
+            # 将速度值转换为定时器间隔
+            interval = speed_to_interval(speed)
+            self.canvas.start_animation(interval, speed)
             self.play_button.setText("Stop")
             
     def update_animation_speed(self, speed: int):
         """Update animation speed."""
         if self.canvas.animation_mode:
-            self.canvas.stop_animation()
-            self.canvas.start_animation(speed)
-            
+            interval = speed_to_interval(speed)
+            self.canvas.animation_timer.setInterval(interval)
+            self.canvas.animation_speed = speed  # 更新速度信息
+
+
+
     def fit_to_view(self):
         """Fit pattern to view."""
         self.canvas.fit_to_view()
