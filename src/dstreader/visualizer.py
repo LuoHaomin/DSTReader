@@ -98,7 +98,7 @@ class DSTVisualizer:
         
         # Set equal aspect ratio and invert Y axis
         ax.set_aspect('equal')
-        ax.invert_yaxis()
+        # ax.invert_yaxis()
         
         # Determine output path
         if output_path is None:
@@ -153,7 +153,7 @@ class DSTVisualizer:
         
         # Set aspect ratio and invert Y axis
         ax.set_aspect('equal')
-        ax.invert_yaxis()
+        # ax.invert_yaxis()
         
         # Initialize plot elements
         line_stitch, = ax.plot([], [], 'b-', linewidth=2.5, label='刺绣路径', alpha=0.8)
@@ -271,7 +271,7 @@ class DSTVisualizer:
         
         # Set aspect ratio and invert Y axis
         ax.set_aspect('equal')
-        ax.invert_yaxis()
+        # ax.invert_yaxis()
         
         # Initialize plot elements
         line_stitch, = ax.plot([], [], 'b-', linewidth=2.5, label='刺绣路径', alpha=0.8)

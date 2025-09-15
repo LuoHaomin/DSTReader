@@ -134,21 +134,25 @@ class OptimizedDSTParser:
         # Pre-allocate list for better performance
         stitches = [None] * stitch_count
         
-        # Use numpy for faster bit operations
-        data_array = np.frombuffer(stitch_data, dtype=np.uint8)
-        data_array = data_array.reshape(-1, 3)
+        # Convert bytes to unsigned integers to avoid uint8 bounds issues
+        # Use list comprehension to safely convert bytes to uint8 range
+        data_list = [b & 0xFF for b in stitch_data]
         
-        for i, (byte0, byte1, byte2) in enumerate(data_array):
-            # Optimized coordinate calculation using bitwise operations
-            x = self._calculate_x_coordinate(byte0, byte1, byte2)
-            y = self._calculate_y_coordinate(byte0, byte1, byte2)
-            
-            # Parse flags
-            jump = bool(byte2 & 0b10000000)
-            color_change = bool(byte2 & 0b01000000)
-            set_flag = byte2 & 0b00000011
-            
-            stitches[i] = Stitch(x=x, y=y, jump=jump, color_change=color_change, set_flag=set_flag)
+        for i in range(stitch_count):
+            byte_idx = i * 3
+            if byte_idx + 2 < len(data_list):
+                byte0, byte1, byte2 = data_list[byte_idx:byte_idx+3]
+                
+                # Optimized coordinate calculation using bitwise operations
+                x = self._calculate_x_coordinate(byte0, byte1, byte2)
+                y = self._calculate_y_coordinate(byte0, byte1, byte2)
+                
+                # Parse flags
+                jump = bool(byte2 & 0b10000000)
+                color_change = bool(byte2 & 0b01000000)
+                set_flag = byte2 & 0b00000011
+                
+                stitches[i] = Stitch(x=x, y=y, jump=jump, color_change=color_change, set_flag=set_flag)
         
         return stitches
     

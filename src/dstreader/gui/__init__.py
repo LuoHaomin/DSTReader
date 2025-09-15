@@ -135,9 +135,10 @@ class DSTCanvas(QWidget):
         center_x = (bounds[0] + bounds[2]) / 2
         center_y = (bounds[1] + bounds[3]) / 2
         
+        # Adjust for Y-axis inversion: Y coordinates are flipped
         self.pan_offset = QPoint(
             int(widget_size.width() / 2 - center_x * self.zoom_factor),
-            int(widget_size.height() / 2 - center_y * self.zoom_factor)
+            int(widget_size.height() / 2 + center_y * self.zoom_factor)  # + instead of -
         )
         
         self.update()
@@ -191,6 +192,9 @@ class DSTCanvas(QWidget):
         painter.translate(self.pan_offset)
         painter.scale(self.zoom_factor, self.zoom_factor)
         
+        # Invert Y axis to make "up is positive"
+        painter.scale(1, -1)
+        
         # Draw pattern
         self._draw_pattern(painter)
         
@@ -202,21 +206,17 @@ class DSTCanvas(QWidget):
         if not coordinates:
             return
             
-        # Draw stitches and jumps
-        current_x = current_y = 0
-        
+        # Draw stitches and jumps using pre-calculated coordinates
         for i, stitch in enumerate(self.dst_file.stitches):
             if self.animation_mode and i > self.current_frame:
                 break
                 
-            # Calculate absolute position
-            current_x += stitch.x
-            current_y += stitch.y
+            # Use pre-calculated coordinates
+            current_coord = coordinates[i]
             
             # Draw line to previous point
             if i > 0:
                 prev_coord = coordinates[i - 1]
-                current_coord = (current_x, current_y)
                 
                 # Check if both current and previous stitches are not jumps (stitch segment)
                 # This matches the original logic: blue if both stitches are not jumps, red otherwise
@@ -239,11 +239,11 @@ class DSTCanvas(QWidget):
             if self.animation_mode and i == self.current_frame:
                 painter.setPen(QPen(self.current_color, 3))
                 painter.setBrush(QBrush(self.current_color))
-                painter.drawEllipse(int(current_x) - 3, int(current_y) - 3, 6, 6)
+                painter.drawEllipse(int(current_coord[0]) - 3, int(current_coord[1]) - 3, 6, 6)
             elif i < len(coordinates) - 1:  # Don't draw the last point as a circle
                 painter.setPen(QPen(QColor(0, 0, 0), 1))
                 painter.setBrush(QBrush(QColor(0, 0, 0)))
-                painter.drawEllipse(int(current_x) - 1, int(current_y) - 1, 2, 2)
+                painter.drawEllipse(int(current_coord[0]) - 1, int(current_coord[1]) - 1, 2, 2)
                 
     def wheelEvent(self, event):
         """Handle mouse wheel zoom."""
