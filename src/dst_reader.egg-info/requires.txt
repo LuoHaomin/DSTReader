@@ -1,0 +1,10 @@
+PyQt5>=5.15.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+pyinstaller>=5.0.0
+
+[dev]
+pytest>=6.0.0
+black>=21.0.0
+flake8>=3.9.0
+mypy>=0.910

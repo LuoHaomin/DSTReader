@@ -1,0 +1,2 @@
+[console_scripts]
+dstreader = dstreader.gui:main
